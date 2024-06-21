@@ -1,0 +1,13 @@
+services:
+  artifactory:
+    container_name: artifactory
+    image: "releases-docker.jfrog.io/jfrog/artifactory-cpp-ce:7.77.5"
+    ports:
+      - 127.0.0.1:8081-8082:8081-8082/tcp
+    volumes:
+      - type: volume
+        source: artifactory
+        target: /var/opt/jfrog/artifactory
+
+volumes:
+  artifactory:
