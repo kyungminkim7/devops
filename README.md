@@ -23,6 +23,10 @@ docker compose down
 ```
 
 ## Accessing Lab Services
-The following services are hosted on the localhost (127.0.0.1)
-on the following TCP ports:
+The following services can be reached from the host machine by
+targeting `localhost` (127.0.0.1) on the following TCP ports:
 - Artifactory: 8082
+
+The same services can be reached from other docker containers
+by running them on the `lab_net` network and targeting the
+service name.
