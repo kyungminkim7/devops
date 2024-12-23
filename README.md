@@ -51,7 +51,7 @@ The following resources are created:
     - Stop/disable the host's SSH server
     - Modify the host's SSH server configs to listen on a different port
 
-## Run {#run}
+## Run
 
 The DevOps resources can be started using the following command template
 (substitute `<HOSTNAME>` with your server's hostname):
@@ -88,7 +88,7 @@ inside their respective containers:
 - `docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword`
 - `docker exec nexus cat /nexus-data/admin.password`
 
-## Stop {#stop}
+## Stop
 
 The containers can be stopped/destroyed with the following command template
 (substitute `<HOSTNAME>` with your server's hostname):
@@ -117,5 +117,6 @@ respective volume(s) by:
 The Docker Compose file always pulls the latest Docker images every time
 `docker compose up` is run so to update the DevOps resources to the latest
 versions, simply:
-1. [Stop and destroy](#stop) the running containers
-2. [Run](#run) the containers
+1. Stop and destroy the running containers using the instructions in the
+   **Stop** section.
+2. Recreate the containers using the instructions in the **Run** section.
