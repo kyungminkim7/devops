@@ -1,18 +1,91 @@
 services:
-  artifactory:
-    container_name: artifactory
-    image: "releases-docker.jfrog.io/jfrog/artifactory-cpp-ce:7.77.5"
+  traefik:
+    container_name: traefik
+    image: traefik
+    pull_policy: always
+    restart: always
+    command:
+      - --providers.docker
+      - --entryPoints.ssh.address=:22
+      - --entryPoints.websecure.address=:443
     ports:
-      - 127.0.0.1:8081-8082:8081-8082/tcp
-    networks:
-      - net
+      - 22:22
+      - 443:443
     volumes:
-      - type: volume
-        source: artifactory
-        target: /var/opt/jfrog/artifactory
+      - /var/run/docker.sock:/var/run/docker.sock
 
-networks:
-  net:
+  gitlab:
+    container_name: gitlab
+    image: gitlab/gitlab-ce
+    pull_policy: always
+    restart: always
+    labels:
+      - traefik.http.services.gitlabweb.loadbalancer.server.port=80
+      - traefik.http.routers.gitlabweb.service=gitlabweb
+      - traefik.http.routers.gitlabweb.rule=PathPrefix(`/gitlab`)
+      - traefik.http.routers.gitlabweb.entrypoints=websecure
+      - traefik.http.routers.gitlabweb.tls=true
+
+      - traefik.tcp.services.gitlabssh.loadbalancer.server.port=22
+      - traefik.tcp.routers.gitlabssh.service=gitlabssh
+      - traefik.tcp.routers.gitlabssh.rule=HostSNI(`*`)
+      - traefik.tcp.routers.gitlabssh.entrypoints=ssh
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url "https://${HOSTNAME?}/gitlab"
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    shm_size: '256m'
+
+  jenkins:
+      container_name: jenkins
+      image: jenkins
+      pull_policy: build
+      build:
+        context: jenkins
+        pull: true
+      restart: always
+      user: jenkins:${DOCKER_GID:-jenkins}
+      environment:
+        JENKINS_OPTS: --prefix=/jenkins
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - jenkins:/var/jenkins_home
+      labels:
+        - traefik.http.routers.jenkins.rule=PathPrefix(`/jenkins`)
+        - traefik.http.routers.jenkins.entrypoints=websecure
+        - traefik.http.routers.jenkins.tls=true
+
+  nexus:
+    container_name: nexus
+    image: sonatype/nexus3
+    pull_policy: always
+    restart: always
+    labels:
+      - traefik.http.services.nexus.loadbalancer.server.port=8081
+      - traefik.http.routers.nexus.service=nexus
+      - traefik.http.routers.nexus.rule=PathPrefix(`/nexus`)
+      - traefik.http.routers.nexus.entrypoints=websecure
+      - traefik.http.routers.nexus.tls=true
+
+      - traefik.http.services.docker.loadbalancer.server.port=8082
+      - traefik.http.routers.docker.service=docker
+      - traefik.http.routers.docker.rule=PathRegexp(`^/(docker|v2)`)
+      - traefik.http.routers.docker.entrypoints=websecure
+      - traefik.http.routers.docker.tls=true
+    environment:
+      NEXUS_CONTEXT: nexus
+      REGISTRY_HTTP_RELATIVEURLS: true
+    volumes:
+      - nexus:/nexus-data
 
 volumes:
-  artifactory:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+  jenkins:
+  nexus:
