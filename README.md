@@ -54,7 +54,8 @@ The following resources are created:
 ## Run
 
 The DevOps resources can be started using the following command template
-(substitute `<HOSTNAME>` with your server's hostname):
+(substitute `<HOSTNAME>` with your server's hostname and domain name if you
+have one):
 
 ```bash
 HOSTNAME=<HOSTNAME> \
@@ -62,7 +63,8 @@ DOCKER_GID=$(getent group docker | cut -d: -f3) \
 docker compose up --detach
 ```
 
-Example command for a server with the hostname `devops.home.arpa`:
+Example command for a server with the hostname `devops` on the `home.arpa`
+domain:
 ```bash
 HOSTNAME=devops.home.arpa \
 DOCKER_GID=$(getent group docker | cut -d: -f3) \
