@@ -1,3 +1,4 @@
+---
 services:
   traefik:
     container_name: traefik
@@ -6,12 +7,15 @@ services:
     restart: always
     command:
       - --providers.docker
+      - --providers.file.directory=/etc/traefik/dynamic
       - --entryPoints.ssh.address=:22
       - --entryPoints.websecure.address=:443
     ports:
       - 22:22
       - 443:443
     volumes:
+      - ${PWD}/traefik/dynamic:/etc/traefik/dynamic
+      - ${PWD}/certs:/etc/traefik/certs
       - /var/run/docker.sock:/var/run/docker.sock
 
   gitlab:
@@ -41,24 +45,15 @@ services:
       - gitlab_data:/var/opt/gitlab
     shm_size: '256m'
 
-  jenkins:
-      container_name: jenkins
-      image: jenkins
-      pull_policy: build
-      build:
-        context: jenkins
-        pull: true
-      restart: always
-      user: jenkins:${DOCKER_GID:-jenkins}
-      environment:
-        JENKINS_OPTS: --prefix=/jenkins
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
-        - jenkins:/var/jenkins_home
-      labels:
-        - traefik.http.routers.jenkins.rule=PathPrefix(`/jenkins`)
-        - traefik.http.routers.jenkins.entrypoints=websecure
-        - traefik.http.routers.jenkins.tls=true
+  runner:
+    container_name: runner
+    image: gitlab/gitlab-runner
+    pull_policy: always
+    restart: always
+    volumes:
+      - gitlab_runner:/etc/gitlab-runner
+      - ${PWD}/certs/ca.crt:/etc/gitlab-runner/certs/ca.crt
+      - /var/run/docker.sock:/var/run/docker.sock
 
   nexus:
     container_name: nexus
@@ -87,5 +82,5 @@ volumes:
   gitlab_config:
   gitlab_logs:
   gitlab_data:
-  jenkins:
+  gitlab_runner:
   nexus:
